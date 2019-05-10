@@ -18,37 +18,39 @@
  * along with GQRM.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GQRM_HEADER_H
-#define GQRM_HEADER_H
-
 #include <stdlib.h>
-#include <sys/types.h>
 
-/*
- * These two macros identifying a square deployment field:
- *
- *                          O-------------O    <--- upper right corner
- *                          |             |
- *                          |             |
- *                          |             |
- *                          |             |
- *                          |             |
- * lower left corner --->   O-------------O
+#include "header.h"
+#include "random.h"
+
+static ds_stat random_double(int, int, double*);
+
+/* @fn
+ * Generate a random number of double type between 
+ * "upper" and "lower" bounds, and return this number
+ * through parameter "re".
  */
-#define   UPPER_RIGHT     100
-#define   LOWER_LEFT      0
+ds_stat
+Random_Double(int upper, int lower, double* re)
+{
+    return random_double(upper, lower, re);
+}
 
-typedef enum {
-    DS_OK, DS_ERROR
-} ds_stat;
+static ds_stat
+random_double(int upper, int lower, double* re)
+{
+    unsigned int     integer, offset;
+    double           frac;
 
-typedef enum {
-    DS_FALSE, DS_TRUE
-} ds_bool;
+    if (lower >= upper)
+        return DS_ERROR;
 
-typedef double     coordinate_t;
-typedef double     gqrm_power_t;
-typedef ssize_t    gqrm_id_t;
-typedef ssize_t    gqrm_hop_t;
+    offset = upper - lower;
 
-#endif
+    frac    = (double)(rand() % 100) / 100;
+    integer = rand() % offset;
+
+    *re = (double)integer + frac + (double)lower;
+
+    return DS_OK;
+}

@@ -18,37 +18,23 @@
  * along with GQRM.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GQRM_HEADER_H
-#define GQRM_HEADER_H
-
+#include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <time.h>
 
-/*
- * These two macros identifying a square deployment field:
- *
- *                          O-------------O    <--- upper right corner
- *                          |             |
- *                          |             |
- *                          |             |
- *                          |             |
- *                          |             |
- * lower left corner --->   O-------------O
- */
-#define   UPPER_RIGHT     100
-#define   LOWER_LEFT      0
+#include "../src/header.h"
+#include "../src/random.h"
 
-typedef enum {
-    DS_OK, DS_ERROR
-} ds_stat;
+int main()
+{
+    double   r, i;
+    srand((unsigned)time(NULL));
 
-typedef enum {
-    DS_FALSE, DS_TRUE
-} ds_bool;
+    for (i = 0; i < 400; i++)
+        if (Random_Double(100, -100, &r) == DS_OK)
+            printf("%lf ", r);
+        else
+            printf("fail to random\n");
 
-typedef double     coordinate_t;
-typedef double     gqrm_power_t;
-typedef ssize_t    gqrm_id_t;
-typedef ssize_t    gqrm_hop_t;
-
-#endif
+    return 0;
+}

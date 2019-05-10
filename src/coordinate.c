@@ -18,12 +18,6 @@
  * along with GQRM.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <assert.h>
-
-#include "header.h"
 #include "coordinate.h"
 
 struct COORDINATE {
@@ -60,6 +54,20 @@ Coordinate_Create2D(const coordinate_t x, const coordinate_t y)
     return co;
 }
 
+pt_Coordinate
+Coordinate_CreateRandom2D(const int upper, const int lower)
+{
+    double x, y;
+
+    if (
+        Random_Double(upper, lower, &x) == DS_ERROR ||
+        Random_Double(upper, lower, &y) == DS_ERROR
+       )
+        return NULL;
+
+    return Coordinate_Create2D(x, y);
+}
+
 /* @fn
  * Create a 3D coordinate with given parameters.
  */
@@ -78,6 +86,15 @@ Coordinate_Create3D(const coordinate_t x, const coordinate_t y,
     co->z = z;
 
     return co;
+}
+
+void
+Coordinate_Free(pt_Coordinate* co)
+{
+    if (!*co)
+        return 
+    free(*co);
+    *co = NULL;
 }
 
 /* @fn
@@ -317,9 +334,9 @@ Coordinate_Add(pt_Coordinate lhs, pt_Coordinate rhs, pt_Coordinate res)
     if (!lhs || !rhs || !res)
         return DS_ERROR;
     
-    res->x = lhs->x - rhs->x;
-    res->y = lhs->y - rhs->y;
-    res->z = lhs->z - rhs->z;
+    res->x = lhs->x + rhs->x;
+    res->y = lhs->y + rhs->y;
+    res->z = lhs->z + rhs->z;
 
     return DS_OK;
 }
@@ -395,7 +412,7 @@ Coordinate_2DPrint(pt_Coordinate co, FILE* fp)
     if (!co || !fp)
         return DS_ERROR;
 
-    fprintf(fp, "(%lf, %lf)", co->x, co->y);
+    fprintf(fp, "(%4.2lf, %4.2lf)", co->x, co->y);
 
     return DS_OK;
 }
@@ -406,7 +423,7 @@ Coordinate_3DPrint(pt_Coordinate co, FILE* fp)
     if (!co || !fp)
         return DS_ERROR;
 
-    fprintf(fp, "(%lf, %lf, %lf)", co->x, co->y, co->z);
+    fprintf(fp, "(%4.2lf, %4.2lf, %4.2lf)", co->x, co->y, co->z);
 
     return DS_OK;
 }

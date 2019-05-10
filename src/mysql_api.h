@@ -18,37 +18,14 @@
  * along with GQRM.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GQRM_HEADER_H
-#define GQRM_HEADER_H
+#ifndef GQRM_MYSQL_H
+#define GQRM_MYSQL_H
 
+#include <mysql/mysql.h>    // MySQL adaptor.
 #include <stdlib.h>
-#include <sys/types.h>
 
-/*
- * These two macros identifying a square deployment field:
- *
- *                          O-------------O    <--- upper right corner
- *                          |             |
- *                          |             |
- *                          |             |
- *                          |             |
- *                          |             |
- * lower left corner --->   O-------------O
- */
-#define   UPPER_RIGHT     100
-#define   LOWER_LEFT      0
-
-typedef enum {
-    DS_OK, DS_ERROR
-} ds_stat;
-
-typedef enum {
-    DS_FALSE, DS_TRUE
-} ds_bool;
-
-typedef double     coordinate_t;
-typedef double     gqrm_power_t;
-typedef ssize_t    gqrm_id_t;
-typedef ssize_t    gqrm_hop_t;
+#include "header.h"
+#include "coordinate.h"
+#include "node.h"
 
 #endif

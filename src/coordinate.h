@@ -21,11 +21,21 @@
 #ifndef GQRM_COORDINATE_H
 #define GQRM_COORDINATE_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+
+#include "header.h"
+#include "random.h"
+
 typedef struct COORDINATE  Coordinate;
 typedef Coordinate*        pt_Coordinate;
 
 extern pt_Coordinate Coordinate_Create2D(const coordinate_t, const coordinate_t);
 extern pt_Coordinate Coordinate_Create3D(const coordinate_t, const coordinate_t, const coordinate_t);
+extern pt_Coordinate Coordinate_CreateRandom2D(const int, const int);
+extern void Coordinate_Free(pt_Coordinate*);
 extern ds_stat Coordinate_Assign(pt_Coordinate, pt_Coordinate);
 extern ds_stat Coordinate_GetX(pt_Coordinate, coordinate_t*);
 extern ds_stat Coordinate_GetY(pt_Coordinate, coordinate_t*);
