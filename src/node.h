@@ -28,11 +28,14 @@
 #include "header.h"
 #include "coordinate.h"
 #include "prr.h"
+#include "single_linked_list.h"
 
 typedef enum NODE_T     node_t; 
 typedef enum STATUS     cdl_status;
 typedef struct NODE     Node;
 typedef Node*           pt_Node;
+typedef struct NODES    Nodes;
+typedef Nodes*          pt_Nodes;
 
 extern pt_Node      Node_CreateSN(pt_Coordinate, gqrm_id_t, gqrm_power_t, gqrm_hop_t);
 extern pt_Node      Node_CreateRandomSN(gqrm_id_t, gqrm_power_t, gqrm_hop_t);
@@ -58,5 +61,15 @@ extern ds_bool      Node_IsSame(pt_Node, pt_Node);
 extern coordinate_t Node_Distance(pt_Node, pt_Node);
 extern ds_stat      Node_2DPrint(pt_Node, FILE*);
 extern ds_stat      Node_3DPrint(pt_Node, FILE*);
-extern ds_bool      Node_IsNeighbor(pt_Node, pt_Node);
+extern ds_bool      Node_IsNeighbor(pt_Node, pt_Node, double*);
+
+
+extern pt_Nodes     Nodes_Create(void);
+extern ds_stat      Nodes_PushNode(pt_Nodes, pt_Node);
+extern ds_stat      Nodes_PopNode(pt_Nodes);
+extern void         Nodes_Clear(pt_Nodes);
+extern void         Nodes_Free(pt_Nodes*);
+extern size_t       Nodes_Size(pt_Nodes);
+extern ds_bool      Nodes_Empty(pt_Nodes);
+extern ds_stat      Nodes_GetNode(pt_Nodes, size_t, pt_Node*);
 #endif

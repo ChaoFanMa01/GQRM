@@ -54,7 +54,7 @@ struct VERTEX {
     gqrm_id_t         id;
     vertex_type       type;
     graph_data_t      data;
-    node_weight_t     weight;
+    vertex_weight_t     weight;
     vertex_status     status;
     gqrm_id_t         parent;
     p_sll             edges;
@@ -70,6 +70,21 @@ struct EDGE {
     pt_Vertex         end;
     edge_weight_t     weight;
 };
+
+/* @struct
+ * Structure defining a graph implemented based on 
+ * adjacency list.
+ */
+struct ALGRAPH {
+    p_sll    vertices;
+};
+
+static pt_Vertex create_vertex(gqrm_id_t, vertex_type, graph_data_t, vertex_weight_t, vertex_status, gqrm_id_t);
+static int       edge_cmp(sll_data_t, sll_data_t);
+static void      edge_clear_op(sll_data_t*);
+static void      destroy_edges(pt_Vertex);
+static void      vertex_clear_op(sll_data_t*);
+static ds_stat   error_clear(pt_ALGraph);
 
 pt_Edge
 Edge_Create(pt_Vertex v, const edge_weight_t w)
@@ -112,10 +127,18 @@ Edge_Equal(pt_Edge rhs, pt_Edge lhs)
     if (!rhs || !lhs)
         return DS_FALSE;
 
-    if (
-        rhs->end == lhs->end ||
-        rhs->weight == lhs->weight
-       )
+    if (rhs->weight == lhs->weight)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Edge_Same(pt_Edge rhs, pt_Edge lhs)
+{
+    if (!rhs || !lhs)
+        return DS_FALSE;
+
+    if (rhs->end == lhs->end)
         return DS_TRUE;
     return DS_FALSE;
 }
@@ -219,7 +242,7 @@ Edge_SetWeight(pt_Edge pe, edge_weight_t w)
 
 static pt_Vertex
 create_vertex(gqrm_id_t i, vertex_type t, 
-              graph_data_t d, node_weight_t w,
+              graph_data_t d, vertex_weight_t w,
               vertex_status s, gqrm_id_t p)
 {
     pt_Vertex   pv = malloc(sizeof(Vertex));
@@ -233,5 +256,454 @@ create_vertex(gqrm_id_t i, vertex_type t,
     pv->weight  = w;
     pv->status  = s;
     pv->parent  = p;
-    SingleLinkedList_Init(&pv->edges);
+    if (SingleLinkedList_Init(&pv->edges) == DS_ERROR) {
+        free(pv);
+        return NULL;
+    }
+    return pv;
+}
+
+pt_Vertex
+Vertex_CreateDestination(gqrm_id_t i, graph_data_t d,
+                         vertex_weight_t w)
+{
+    return create_vertex(i, DST, d, w, S, -1);
+}
+
+pt_Vertex
+Vertex_CreateSource(gqrm_id_t i, graph_data_t d,
+                    vertex_weight_t w)
+{
+    return create_vertex(i, SRC, d, w, S, -1);
+}
+
+pt_Vertex
+Vertex_CreateMediate(gqrm_id_t i, graph_data_t d,
+                     vertex_weight_t w)
+{
+    return create_vertex(i, MDT, d, w, U, -1);
+}
+
+ds_stat
+Vertex_Assign(pt_Vertex rhs, pt_Vertex lhs)
+{
+    p_sll cpy;
+
+    if (!rhs || !lhs)
+        return DS_ERROR;
+ 
+    if ((cpy = SingleLinkedList_Copy(lhs->edges)) == NULL)
+        return DS_ERROR;
+
+    rhs->id     = lhs->id;
+    rhs->type   = lhs->type;
+    rhs->data   = lhs->data;
+    rhs->weight = lhs->weight;
+    rhs->status = lhs->status;
+    rhs->parent = lhs->parent;
+
+    return DS_OK;
+}
+
+/* @fn
+ * Check whether two vertices are same based on 
+ * their "id" fields.
+ */
+ds_bool
+Vertex_Same(pt_Vertex rhs, pt_Vertex lhs)
+{
+    if (!rhs || !lhs)
+        return DS_FALSE;
+
+    if (rhs->id == lhs->id)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_Equal(pt_Vertex rhs, pt_Vertex lhs)
+{
+    assert(rhs);
+    assert(lhs);
+
+    if (rhs->weight == lhs->weight)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_GreaterThan(pt_Vertex rhs, pt_Vertex lhs)
+{
+    assert(rhs);
+    assert(lhs);
+
+    if (rhs->weight > lhs->weight)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_NoLessThan(pt_Vertex rhs, pt_Vertex lhs)
+{
+    assert(rhs);
+    assert(lhs);
+
+    if (rhs->weight >= lhs->weight)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_LessThan(pt_Vertex rhs, pt_Vertex lhs)
+{
+    assert(rhs);
+    assert(lhs);
+
+    if (rhs->weight < lhs->weight)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_NoGreaterThan(pt_Vertex rhs, pt_Vertex lhs)
+{
+    assert(rhs);
+    assert(lhs);
+
+    if (rhs->weight <= lhs->weight)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_stat
+Vertex_GetData(pt_Vertex pv, graph_data_t* re)
+{
+    if (!pv || !re)
+        return DS_ERROR;
+
+    *re = pv->data;
+    return DS_OK;
+}
+
+ds_stat
+Vertex_GetID(pt_Vertex pv, gqrm_id_t* re)
+{
+    if (!pv || *re)
+        return DS_ERROR;
+
+    *re = pv->id;
+    return DS_OK;
+}
+
+ds_stat
+Vertex_GetWeight(pt_Vertex pv, vertex_weight_t* re)
+{
+    if (!pv || !re)
+        return DS_ERROR;
+
+    *re = pv->weight;
+    return DS_OK;
+}
+
+ds_stat
+Vertex_GetParent(pt_Vertex pv, gqrm_id_t* re)
+{
+    if (!pv || !re)
+        return DS_ERROR;
+
+    *re = pv->parent;
+    return DS_OK;
+}
+
+ds_stat
+Vertex_GetEdges(pt_Vertex pv, p_sll* re)
+{
+    if (!pv || !re)
+        return DS_ERROR;
+
+    *re = pv->edges;
+    return DS_OK;
+}
+
+ds_stat
+Vertex_SetData(pt_Vertex pv, graph_data_t d)
+{
+    if (!pv)
+        return DS_ERROR;
+
+    pv->data = d;
+    return DS_OK;
+}
+
+ds_stat
+Vertex_SetWeight(pt_Vertex pv, vertex_weight_t w)
+{
+    if (!pv)
+        return DS_ERROR;
+
+    pv->weight = w;
+    return DS_OK;
+}
+
+ds_stat
+Vertex_SetParent(pt_Vertex pv, gqrm_id_t p)
+{
+    if (!pv)
+        return DS_ERROR;
+
+    pv->parent = p;
+    return DS_OK;
+}
+
+ds_bool
+Vertex_IsDestination(pt_Vertex pv)
+{
+    if (!pv)
+        return DS_FALSE;
+
+    if (pv->type == DST)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_IsSource(pt_Vertex pv)
+{
+    if (!pv)
+        return DS_FALSE;
+
+    if (pv->type == SRC)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_IsMediate(pt_Vertex pv)
+{
+    if (!pv)
+        return DS_FALSE;
+
+    if (pv->type == MDT)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_bool
+Vertex_IsSelected(pt_Vertex pv)
+{
+    if (!pv)
+        return DS_FALSE;
+
+    if (pv->status == S)
+        return DS_TRUE;
+    return DS_FALSE;
+}
+
+ds_stat
+Vertex_PushNeighbor(pt_Vertex pv, pt_Vertex n, edge_weight_t w)
+{
+    pt_Edge pe = Edge_Create(n, w);
+
+    if (!pe)
+        return DS_ERROR;
+    
+    return Vertex_PushEdge(pv, pe);
+}
+
+ds_stat
+Vertex_PushEdge(pt_Vertex pv, pt_Edge pe)
+{
+    if (!pv || !pe)
+        return DS_ERROR;
+
+    if (!SingleLinkedList_Contain(pv->edges, pe, edge_cmp)) {
+        SingleLinkedList_InsertHead(pv->edges, pe);
+        return DS_OK;
+    }
+    return DS_ERROR;
+}
+
+ds_stat
+Vertex_PopEdge(pt_Vertex pv)
+{
+    pt_Edge pe;
+    if (!pv)
+        return DS_ERROR;
+    if (SingleLinkedList_DeleteHead(pv->edges, (sll_data_t*)&pe) == DS_OK) {
+        Edge_Free(&pe);
+        return DS_OK;
+    }
+    return DS_ERROR;
+}
+
+void
+Vertex_ClearEdge(pt_Vertex pv)
+{
+    SingleLinkedList_Clear(pv->edges, edge_clear_op);
+}
+
+static void
+destroy_edges(pt_Vertex pv)
+{
+    SingleLinkedList_Destroy(&pv->edges, edge_clear_op);
+}
+
+void
+Vertex_Free(pt_Vertex* pv)
+{
+    if (!pv)
+        return;
+    destroy_edges(*pv);
+    free(*pv);
+    *pv = NULL;
+}
+
+size_t
+Vertex_Degree(pt_Vertex pv)
+{
+    if (!pv)
+        return 0;
+    return SingleLinkedList_Size(pv->edges);
+}
+
+ds_bool
+Vertex_IsNeighbor(pt_Vertex pv, pt_Vertex n)
+{
+    pt_Edge pe;
+    if (!pv || !n)
+        return DS_FALSE;
+
+    if ((pe = Edge_Create(n, 0.0)) == NULL)
+        return DS_FALSE;
+    if (SingleLinkedList_Contain(pv->edges, pe, edge_cmp)) {
+        Edge_Free(&pe);
+        return DS_TRUE;
+    } else {
+        Edge_Free(&pe);
+        return DS_FALSE;
+    }
+        
+}
+
+static int
+edge_cmp(sll_data_t rhs, sll_data_t lhs)
+{
+    if (Edge_Same((pt_Edge)rhs, (pt_Edge)lhs) == DS_TRUE)
+        return 0;
+    return 1;
+}
+
+static void
+edge_clear_op(sll_data_t* e)
+{
+    pt_Edge* pe;
+    if (!e)
+        return;
+
+    pe = (pt_Edge*)e;
+    Edge_Free(pe);
+}
+
+pt_ALGraph
+ALGraph_Create(void)
+{
+    pt_ALGraph   pg = malloc(sizeof(ALGraph));
+
+    if (!pg)
+        return NULL;
+
+    if (SingleLinkedList_Init(&pg->vertices) == DS_ERROR) {
+        free(pg);
+        return NULL;
+    }
+    return pg;
+}
+
+/* @fn 
+ * Initialize a adjacency list based graph according to
+ * a linked list "init_list", which stores all the data
+ * to be assigned to vertices in this graph.
+ * 
+ * @param pg An empty graph to be initialized.
+ * @param init_list The list storing all data.
+ * @param func A callback function to determine whether
+ *        two vertices are neighbors in this graph.
+ */
+ds_stat
+ALGraph_Init(pt_ALGraph pg, p_sll init_list, is_neighbor func)
+{
+    size_t           i, j, size;
+    graph_data_t     data;
+    pt_Vertex        pv, pi, pj;
+    edge_weight_t    w;
+
+    if (!pg || !init_list)
+        return DS_ERROR;
+
+    size = SingleLinkedList_Size(init_list);
+    for (i = 0; i < size; i++) {
+        if (SingleLinkedList_GetData(init_list, i, &data) == DS_ERROR)
+            return error_clear(pg);
+        if ((pv = Vertex_CreateMediate(i, data, VERTEX_WEIGHT_INF)) == NULL)
+            return error_clear(pg);
+        if (SingleLinkedList_InsertTail(pg->vertices, pv) == DS_ERROR)
+            return error_clear(pg);
+    }
+
+    for (i = 0; i < size; i++)
+        for (j = 0; j < size; j++)
+            if (i != j) {
+                if (SingleLinkedList_GetData(pg->vertices, i, (sll_data_t*)&pi) == DS_ERROR)
+                    return error_clear(pg);
+                if (SingleLinkedList_GetData(pg->vertices, j, (sll_data_t*)&pj) == DS_ERROR)
+                    return error_clear(pg);
+                if ((w = func(pi->data, pj->data)) > 0.0)
+                    if (Vertex_PushNeighbor(pi, pj, w) == DS_ERROR)
+                        return error_clear(pg);
+            }
+    return DS_OK;
+}
+
+static ds_stat
+error_clear(pt_ALGraph pg)
+{
+    if (!pg)
+        return DS_ERROR;
+    SingleLinkedList_Clear(pg->vertices, vertex_clear_op);
+    return DS_ERROR;
+}
+
+static void
+vertex_clear_op(sll_data_t* v)
+{
+    pt_Vertex* pv;
+    if (!v)
+        return;
+
+    pv = (pt_Vertex*)v;
+    Vertex_Free(pv);
+}
+
+ds_stat
+ALGraph_Print(pt_ALGraph pg, FILE* fp)
+{
+    size_t     v_size, e_size, i, j;
+    pt_Vertex  pv;
+    pt_Edge    pe;
+    if (!pg || !fp)
+        return DS_ERROR;
+
+    v_size = SingleLinkedList_Size(pg->vertices);
+    for (i = 0; i < v_size; i++) {
+        if (SingleLinkedList_GetData(pg->vertices, i, (sll_data_t*)&pv) == DS_ERROR)
+            return DS_ERROR;
+        fprintf(fp, "id: %4ld, weight: %3d, parent: %4ld, edges: ", pv->id, pv->weight, pv->parent);
+        e_size = SingleLinkedList_Size(pv->edges);
+        for (j = 0; j < e_size; j++) {
+            if (SingleLinkedList_GetData(pv->edges, j, (sll_data_t*)&pe) == DS_ERROR)
+                return DS_ERROR;
+            fprintf(fp, "->(id: %4ld, weight: %2.4lf) ", pe->end->id, pe->weight);
+        }
+        fprintf(fp, "\n");
+    }
 }

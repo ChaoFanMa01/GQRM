@@ -57,8 +57,13 @@ struct NODE {
     cdl_status         status;
 };
 
+struct NODES {
+    p_sll    nodes;
+};
+
 static pt_Node create_node(pt_Coordinate, gqrm_id_t, gqrm_power_t, gqrm_hop_t, node_t, cdl_status);
 static ds_stat print(pt_Node, FILE*, int);
+static void node_clear_op(sll_data_t*);
 
 /* @fn
  * Create a sensor node.
@@ -367,18 +372,94 @@ print(pt_Node nd, FILE* fp, int flag)
  * WILL HALT!
  */
 ds_bool
-Node_IsNeighbor(pt_Node n1, pt_Node n2)
+Node_IsNeighbor(pt_Node n1, pt_Node n2, double* re)
 {
-    coordinate_t   p;
-
     if (!n1 || !n2)
         return DS_FALSE;
     assert(n1->power >= 0.0);
     assert(n2->power >= 0.0);
 
-    p = prr(n1->power, Node_Distance(n1, n2));
-    printf("prr: %lf\n", p);
-    if (isnan(p) || p < PRR_CONSTRAINT)
+    *re = prr(n1->power, Node_Distance(n1, n2));
+    if (isnan(*re) || *re < PRR_CONSTRAINT)
         return DS_FALSE;
     return DS_TRUE;
+}
+
+pt_Nodes
+Nodes_Create(void)
+{
+    pt_Nodes   nds = malloc(sizeof(Nodes));
+
+    if (!nds)
+        return NULL;
+
+    if (SingleLinkedList_Init(&nds->nodes) == DS_ERROR) {
+        free(nds);
+        return NULL;
+    }
+    return nds;
+}
+
+ds_stat
+Nodes_PushNode(pt_Nodes nds, pt_Node n)
+{
+    if (!nds)
+        return DS_ERROR;
+
+    return SingleLinkedList_InsertHead(nds->nodes, n);
+}
+
+ds_stat
+Nodes_PopNode(pt_Nodes nds)
+{
+    pt_Node   nd;
+
+    if (!nds)
+        return DS_ERROR;
+
+    SingleLinkedList_DeleteHead(nds->nodes, (sll_data_t*)&nd);
+    Node_Free(&nd);
+    return DS_OK;
+}
+
+void
+Nodes_Clear(pt_Nodes nds)
+{
+    if (!nds)
+        return;
+
+    SingleLinkedList_Clear(nds->nodes, node_clear_op);
+}
+
+void
+Nodes_Free(pt_Nodes* nds)
+{
+    SingleLinkedList_Destroy(&(*nds)->nodes, node_clear_op);
+    free(*nds);
+    *nds = NULL;
+}
+
+size_t
+Nodes_Size(pt_Nodes nds)
+{
+    return SingleLinkedList_Size(nds->nodes);
+}
+
+ds_bool
+Nodes_Empty(pt_Nodes nds)
+{
+    return SingleLinkedList_Empty(nds->nodes);
+}
+
+ds_stat
+Nodes_GetNode(pt_Nodes nds, size_t index, pt_Node* re)
+{
+    return SingleLinkedList_GetData(nds->nodes, index, (sll_data_t*)re);
+}
+
+static void
+node_clear_op(sll_data_t* nd)
+{
+    pt_Node* n = (pt_Node*)*nd;
+    Node_Free(n);
 }
