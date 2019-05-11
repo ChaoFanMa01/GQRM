@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 		    exit(-1);
 	    if (SingleLinkedList_InsertTail(nodes, nd) == DS_ERROR)
 		    exit(-1);
-	    Node_2DPrint(nd, stdout);
+	    Node_2DPrint(nd, stdout); printf("\n");
 	}
 	if ((pg = ALGraph_Create()) == NULL)
 	    exit(-1);
