@@ -1,10 +1,16 @@
 srcs:=$(wildcard ../src/*.c)
-srcs+=graph_test.c
 objs:=$(patsubst %.c, %.o, $(srcs))
+exe_srcs:=$(wildcard *.c)
+exe_objs:=$(patsubst %.c, %.o, $(exe_srcs))
+exe:=$(basename $(exe_srcs))
 std:=-std=c99
 
-graph:$(objs)
-	gcc $(objs) $(std) -lm -o graph
+all:$(exe)
+
+.PYTHON: all clean
+
+$(exe):$(exe_objs) $(objs)
+	gcc $(patsubst %.c, %.o, $(filter $@.c, $(exe_srcs))) $(objs) $(std) -lm -o $@
 
 $(filter %.o, $(objs)):%.o:%.c
 	gcc -c $(std) $< -o $@
@@ -15,8 +21,7 @@ $(filter %.o, $(objs)):%.o:%.c
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-sinclude $(srcs:.c=.d)
+sinclude $(srcs:.c=.d) $(exe_srcs:.c=.d)
 
-.PYTHON: clean
 clean:
-	-rm graph $(objs) $(srcs:.c=.d)
+	-rm $(objs) $(srcs:.c=.d) $(exe) $(exe_srcs:.c=.d) $(exe_objs)

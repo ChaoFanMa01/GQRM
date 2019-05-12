@@ -30,6 +30,7 @@ int main(int argc, char* argv[])
     pt_Node   nd1, nd2;
     int       size;
     int       i, type, id = 0;
+	double    prr;
 
     srand((unsigned)time(0));
 
@@ -59,7 +60,7 @@ int main(int argc, char* argv[])
         Node_2DPrint(nd1, stdout); printf("\n");
         Node_2DPrint(nd2, stdout); printf("\n");
         printf("Distance: %lf", Node_Distance(nd1, nd2));
-        if (Node_IsNeighbor(nd1, nd2) == DS_TRUE)
+        if (Node_IsNeighbor(nd1, nd2, &prr) == DS_TRUE)
             printf(" neighbor\n");
         else
             printf(" not neighbor\n");
