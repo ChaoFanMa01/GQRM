@@ -83,7 +83,6 @@ static pt_Vertex create_vertex(gqrm_id_t, vertex_type, graph_data_t, vertex_weig
 static int       edge_cmp(sll_data_t, sll_data_t);
 static void      edge_clear_op(sll_data_t*);
 static void      destroy_edges(pt_Vertex);
-static void      vertex_clear_op(sll_data_t*);
 static ds_stat   error_clear(pt_ALGraph);
 
 pt_Edge
@@ -138,7 +137,7 @@ Edge_Same(pt_Edge rhs, pt_Edge lhs)
     if (!rhs || !lhs)
         return DS_FALSE;
 
-    if (rhs->end == lhs->end)
+    if (rhs->end->id == lhs->end->id)
         return DS_TRUE;
     return DS_FALSE;
 }
@@ -214,6 +213,15 @@ Edge_GetEnd(pt_Edge pe, pt_Vertex* re)
 }
 
 ds_stat
+Edge_GetEndID(pt_Edge pe, gqrm_id_t* re)
+{
+    if (!pe || !re)
+	    return DS_ERROR;
+	*re = pe->end->id;
+	return DS_OK;
+}
+
+ds_stat
 Edge_GetWeight(pt_Edge pe, edge_weight_t* re)
 {
     if (!pe) 
@@ -282,6 +290,39 @@ Vertex_CreateMediate(gqrm_id_t i, graph_data_t d,
                      vertex_weight_t w)
 {
     return create_vertex(i, MDT, d, w, U, -1);
+}
+
+pt_Vertex
+Vertex_DeepCopy(pt_Vertex pv)
+{
+    pt_Vertex cpy = NULL;
+	if (!pv)
+	    return NULL;
+	if ((cpy = Vertex_CreateMediate(0, NULL, 0)) == NULL)
+	    return NULL;
+	if (Vertex_Assign(cpy, pv) == DS_ERROR) {
+	    Vertex_Free(&cpy);
+		return NULL;
+	}
+	return cpy;
+}
+
+pt_Vertex
+Vertex_ShallowCopy(pt_Vertex pv)
+{
+    pt_Vertex cpy = NULL;
+	if (!pv)
+	    return NULL;
+	cpy = Vertex_CreateMediate(0, NULL, 0);
+	if (!cpy)
+	    return NULL;
+	cpy->id       = pv->id;
+	cpy->type     = pv->type;
+	cpy->data     = pv->data;
+	cpy->weight   = pv->weight;
+	cpy->status   = pv->status;
+	cpy->parent   = pv->parent;
+	return cpy;
 }
 
 ds_stat
@@ -388,7 +429,7 @@ Vertex_GetData(pt_Vertex pv, graph_data_t* re)
 ds_stat
 Vertex_GetID(pt_Vertex pv, gqrm_id_t* re)
 {
-    if (!pv || *re)
+    if (!pv || !re)
         return DS_ERROR;
 
     *re = pv->id;
@@ -423,6 +464,29 @@ Vertex_GetEdges(pt_Vertex pv, p_sll* re)
 
     *re = pv->edges;
     return DS_OK;
+}
+
+ds_stat
+Vertex_DeleteEdge(pt_Vertex pv, gqrm_id_t id)
+{
+    size_t  size, i;
+	pt_Edge pe;
+
+    if (!pv)
+	    return DS_ERROR;
+    size = Vertex_Degree(pv);
+	for (i = 0; i < size; i++) {
+	    if (SingleLinkedList_GetData(pv->edges, i, (sll_data_t*)&pe) == DS_ERROR)
+		    return DS_ERROR;
+		if (pe->end->id == id)
+		    if (SingleLinkedList_Delete(pv->edges, i, NULL) == DS_ERROR) {
+			    return DS_ERROR;
+			} else {
+			    Edge_Free(&pe);
+				return DS_OK;
+			}
+	}
+	return DS_ERROR;
 }
 
 ds_stat
@@ -497,6 +561,27 @@ Vertex_IsSelected(pt_Vertex pv)
     if (pv->status == S)
         return DS_TRUE;
     return DS_FALSE;
+}
+
+ds_stat
+Vertex_GetEdgeWeight(pt_Vertex pv, gqrm_id_t neighbor, edge_weight_t* w)
+{
+    pt_Edge  pe;
+    size_t   size, i;
+
+	if (!pv || !w)
+	    return DS_ERROR;
+	
+	size = SingleLinkedList_Size(pv->edges);
+	for (i = 0; i < size; i++) {
+	    if (SingleLinkedList_GetData(pv->edges, i, (sll_data_t*)&pe) == DS_ERROR)
+		    return DS_ERROR;
+		if (neighbor == pe->end->id) {
+		    *w = pe->weight;
+			return DS_OK;
+		}
+	}
+	return DS_ERROR;
 }
 
 ds_stat
@@ -664,6 +749,141 @@ ALGraph_Init(pt_ALGraph pg, p_sll init_list, is_neighbor func)
     return DS_OK;
 }
 
+size_t
+ALGraph_Size(pt_ALGraph pg)
+{
+    if (!pg || !pg->vertices)
+	    return 0;
+    return SingleLinkedList_Size(pg->vertices);
+}
+
+ds_bool
+ALGraph_ContainVertexID(pt_ALGraph pg, gqrm_id_t id)
+{
+    size_t     i, size;
+	pt_Vertex  iter;
+	if (!pg || !pg->vertices)
+	    return DS_FALSE;
+	size = ALGraph_Size(pg);
+	for (i = 0; i < size; i++) {
+	    if (ALGraph_GetVertex(pg, i, &iter) == DS_ERROR)
+		    return DS_FALSE;
+		if (iter->id == id)
+		    return DS_TRUE;
+	}
+	return DS_FALSE;
+}
+
+ds_bool
+ALGraph_ContainVertex(pt_ALGraph pg, pt_Vertex pv)
+{
+    size_t      i, size;
+	pt_Vertex   iter;
+    if (!pg || !pg->vertices || !pv)
+	    return DS_FALSE;
+	size = ALGraph_Size(pg);
+	for (i = 0;i < size; i++) {
+	    if (ALGraph_GetVertex(pg, i, &iter) == DS_ERROR)
+		    return DS_FALSE;
+		if (Vertex_Same(iter, pv) == DS_TRUE)
+		    return DS_TRUE;
+	}
+	return DS_FALSE;
+}
+
+pt_ALGraph
+ALGraph_Copy(pt_ALGraph pg)
+{
+    size_t   i, size;
+	pt_Vertex pv, tmp;
+	pt_ALGraph cpy;
+
+    if (!pg || !pg->vertices)
+	    return NULL;
+
+    if ((cpy = ALGraph_Create()) == NULL)
+	    return NULL;
+
+    size = SingleLinkedList_Size(pg->vertices);
+	for (i = 0; i <size; i++) {
+	    if (SingleLinkedList_GetData(pg->vertices, i, (sll_data_t*)&tmp) == DS_ERROR) {
+		    ALGraph_Free(&cpy);
+			return NULL;
+		}
+	    if ((pv = Vertex_CreateMediate(0, NULL, 0)) == NULL) {
+		    ALGraph_Free(&cpy);
+			return NULL;
+		}
+		if (Vertex_Assign(pv, tmp) == DS_ERROR) {
+		    ALGraph_Free(&cpy);
+			return NULL;
+		}
+		if (SingleLinkedList_InsertTail(cpy->vertices, pv) == DS_ERROR) {
+		    ALGraph_Free(&cpy);
+			return NULL;
+		}
+	}
+	return cpy;
+}
+
+ds_stat
+ALGraph_GetVertex(pt_ALGraph pg, size_t index, pt_Vertex* re)
+{
+    if (!pg || !pg->vertices || !re)
+	    return DS_ERROR;
+	return SingleLinkedList_GetData(pg->vertices, index, (sll_data_t*)re);
+}
+
+ds_stat
+ALGraph_GetVertexByID(pt_ALGraph pg, gqrm_id_t id, pt_Vertex* re)
+{
+    pt_Vertex    pv;
+	size_t       size, i;
+	gqrm_id_t    cmp;
+
+    if (!pg || !pg->vertices || !re)
+	    return DS_ERROR;
+	size = ALGraph_Size(pg);
+	for (i = 0; i < size; i++) {
+	    if (ALGraph_GetVertex(pg, i, &pv) == DS_ERROR)
+		    return DS_ERROR;
+		if (Vertex_GetID(pv, &cmp) == DS_ERROR)
+		    return DS_ERROR;
+		if (id == cmp) {
+		    *re = pv;
+			return DS_OK;
+		}
+	}
+	return DS_ERROR;
+}
+
+ds_stat
+ALGraph_PushVertex(pt_ALGraph pg, pt_Vertex pv)
+{
+    if (!pg || !pv)
+	    return DS_ERROR;
+	return SingleLinkedList_InsertTail(pg->vertices, pv);
+}
+
+ds_stat
+ALGraph_PopVertex(pt_ALGraph pg, pt_Vertex* re)
+{
+    if (!pg)
+	    return DS_ERROR;
+	return SingleLinkedList_DeleteTail(pg->vertices, (sll_data_t*)re);
+}
+
+void
+ALGraph_Free(pt_ALGraph* pg)
+{
+    if (!*pg)
+	    return;
+	if ((*pg)->vertices)
+	    SingleLinkedList_Destroy(&(*pg)->vertices, vertex_clear_op);
+	free(*pg);
+	*pg = NULL;
+}
+
 static ds_stat
 error_clear(pt_ALGraph pg)
 {
@@ -673,7 +893,7 @@ error_clear(pt_ALGraph pg)
     return DS_ERROR;
 }
 
-static void
+void
 vertex_clear_op(sll_data_t* v)
 {
     pt_Vertex* pv;

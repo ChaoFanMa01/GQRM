@@ -53,6 +53,7 @@ extern ds_bool Edge_LessThan(pt_Edge, pt_Edge);
 extern ds_bool Edge_NoGreaterThan(pt_Edge, pt_Edge);
 extern void    Edge_Free(pt_Edge*);
 extern ds_stat Edge_GetEnd(pt_Edge, pt_Vertex*);
+extern ds_stat Edge_GetEndID(pt_Edge, gqrm_id_t*);
 extern ds_stat Edge_GetWeight(pt_Edge, edge_weight_t*);
 extern ds_stat Edge_SetEnd(pt_Edge, pt_Vertex);
 extern ds_stat Edge_SetWeight(pt_Edge, edge_weight_t);
@@ -62,6 +63,8 @@ extern pt_Vertex Vertex_CreateDestination(gqrm_id_t, graph_data_t, vertex_weight
 extern pt_Vertex Vertex_CreateSource(gqrm_id_t, graph_data_t, vertex_weight_t);
 extern pt_Vertex Vertex_CreateMediate(gqrm_id_t, graph_data_t, vertex_weight_t);
 extern ds_stat   Vertex_Assign(pt_Vertex, pt_Vertex);
+extern pt_Vertex Vertex_ShallowCopy(pt_Vertex);
+extern pt_Vertex Vertex_DeepCopy(pt_Vertex);
 extern ds_bool   Vertex_Same(pt_Vertex, pt_Vertex);
 extern ds_bool   Vertex_Equal(pt_Vertex, pt_Vertex);
 extern ds_bool   Vertex_GreaterThan(pt_Vertex, pt_Vertex);
@@ -83,13 +86,25 @@ extern ds_bool   Vertex_IsSelected(pt_Vertex);
 extern ds_stat   Vertex_PushEdge(pt_Vertex, pt_Edge);
 extern ds_stat   Vertex_PushNeighbor(pt_Vertex, pt_Vertex, edge_weight_t);
 extern ds_bool   Vertex_IsNeighbor(pt_Vertex, pt_Vertex);
+extern ds_stat   Vertex_GetEdgeWeight(pt_Vertex, gqrm_id_t, edge_weight_t*);
+extern ds_stat   Vertex_DeleteEdge(pt_Vertex, gqrm_id_t);
 extern size_t    Vertex_Degree(pt_Vertex);
 extern ds_stat   Vertex_PopEdge(pt_Vertex);
 extern void      Vertex_ClearEdge(pt_Vertex);
 extern void      Vertex_Free(pt_Vertex*);
+extern void      vertex_clear_op(sll_data_t* v);
 
 
 extern pt_ALGraph    ALGraph_Create(void);
 extern ds_stat       ALGraph_Init(pt_ALGraph, p_sll, is_neighbor);
 extern ds_stat       ALGraph_Print(pt_ALGraph, FILE*);
+extern size_t        ALGraph_Size(pt_ALGraph);
+extern void          ALGraph_Free(pt_ALGraph*);
+extern pt_ALGraph    ALGraph_Copy(pt_ALGraph);
+extern ds_stat       ALGraph_GetVertex(pt_ALGraph, size_t, pt_Vertex*);
+extern ds_stat       ALGraph_GetVertexByID(pt_ALGraph, gqrm_id_t, pt_Vertex*);
+extern ds_bool       ALGraph_ContainVertex(pt_ALGraph, pt_Vertex);
+extern ds_bool       ALGraph_ContainVertexID(pt_ALGraph, gqrm_id_t);
+extern ds_stat       ALGraph_PushVertex(pt_ALGraph, pt_Vertex);
+extern ds_stat       ALGraph_PopVertex(pt_ALGraph, pt_Vertex*);
 #endif
