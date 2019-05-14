@@ -264,6 +264,7 @@ create_vertex(gqrm_id_t i, vertex_type t,
     pv->weight  = w;
     pv->status  = s;
     pv->parent  = p;
+	pv->edges   = NULL;
     if (SingleLinkedList_Init(&pv->edges) == DS_ERROR) {
         free(pv);
         return NULL;
@@ -342,6 +343,7 @@ Vertex_Assign(pt_Vertex rhs, pt_Vertex lhs)
     rhs->weight = lhs->weight;
     rhs->status = lhs->status;
     rhs->parent = lhs->parent;
+	rhs->edges  = cpy;
 
     return DS_OK;
 }
@@ -694,8 +696,10 @@ ALGraph_Create(void)
 {
     pt_ALGraph   pg = malloc(sizeof(ALGraph));
 
-    if (!pg)
+    if (!pg) {
         return NULL;
+	}
+	pg->vertices = NULL;
 
     if (SingleLinkedList_Init(&pg->vertices) == DS_ERROR) {
         free(pg);
@@ -860,8 +864,13 @@ ALGraph_GetVertexByID(pt_ALGraph pg, gqrm_id_t id, pt_Vertex* re)
 ds_stat
 ALGraph_PushVertex(pt_ALGraph pg, pt_Vertex pv)
 {
-    if (!pg || !pv)
+    if (!pg || !pv) {
+	    if (!pg)
+            printf("func: %s, line: %d\n", __func__, __LINE__);
+		else
+            printf("func: %s, line: %d\n", __func__, __LINE__);
 	    return DS_ERROR;
+	}
 	return SingleLinkedList_InsertTail(pg->vertices, pv);
 }
 

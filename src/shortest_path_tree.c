@@ -103,16 +103,17 @@ pt_ALGraph
 ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
                          gqrm_id_t dsts[], size_t n)
 {
-    pt_ALGraph       spt;
+    pt_ALGraph       spt = NULL;
 	gqrm_id_t        id, parent;
 	size_t           size, i, index;
 	edge_weight_t    edge_weight;
 	vertex_weight_t  vertex_weight1, vertex_weight2;
-	pt_Vertex        pv, pv_tmp, pv_new, min, pv_parent;
-	pt_Edge          pe;
+	pt_Vertex        pv = NULL, pv_tmp = NULL, pv_new = NULL, min = NULL, pv_parent = NULL;
+	pt_Edge          pe = NULL;
 	p_sll            gray = NULL;
 	p_sll            white = NULL;
 	p_sll            black = NULL;
+
 
     /*
 	 * gray  = \varnothing;
@@ -243,6 +244,7 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 			}
 		}
 
+//        printf("func: %s, line: %d\n", __func__, __LINE__);
         /*
 		 * B = all neighbors of min in white;
 		 * delete B from white;
@@ -273,7 +275,6 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 			}
 		}
 	}
-
     size = ALGraph_Size(spt);
 	while (has_non_dst_leaves(spt, dsts, n) == DS_TRUE) {
 	    for (i = 0; i < size; i++) {
@@ -301,6 +302,7 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 	SingleLinkedList_Destroy(&gray, NULL);
 	SingleLinkedList_Destroy(&white, NULL);
 	SingleLinkedList_Destroy(&black, NULL);
+//    printf("func: %s, line: %d\n", __func__, __LINE__);
 
 	return spt;
 }

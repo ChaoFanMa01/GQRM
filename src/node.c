@@ -72,7 +72,7 @@ pt_Node
 Node_CreateSN(pt_Coordinate c, gqrm_id_t i, gqrm_power_t p, 
               gqrm_hop_t h)
 {
-    return create_node(c, i, p, h, SN, UNSLCT);
+    return create_node(c, i, p, h, SN, SLCT);
 }
 
 pt_Node
@@ -96,7 +96,7 @@ pt_Node
 Node_CreateRandomCDL(gqrm_id_t i, gqrm_power_t p, gqrm_hop_t h)
 {
     pt_Coordinate  co = Coordinate_CreateRandom2D(UPPER_RIGHT, LOWER_LEFT);
-    return Node_CreateCDL(co, i, p, h, UNSLCT);
+    return Node_CreateCDL(co, i, p, h, SLCT);
 }
 
 /* @fn
@@ -106,7 +106,7 @@ pt_Node
 Node_CreateGW(pt_Coordinate c, gqrm_id_t i, gqrm_power_t p, 
               gqrm_hop_t h)
 {
-    return create_node(c, i, p, h, GW, UNSLCT);
+    return create_node(c, i, p, h, GW, SLCT);
 }
 
 pt_Node
@@ -378,6 +378,9 @@ Node_IsNeighbor(pt_Node n1, pt_Node n2, double* re)
         return DS_FALSE;
     assert(n1->power >= 0.0);
     assert(n2->power >= 0.0);
+
+	if (n1->status == UNSLCT || n2->status == UNSLCT)
+	    return DS_FALSE;
 
     *re = prr(n1->power, Node_Distance(n1, n2));
     if (isnan(*re) || *re < PRR_CONSTRAINT)
