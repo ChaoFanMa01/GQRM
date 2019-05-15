@@ -29,6 +29,7 @@
 #include "../src/shortest_path_tree.h"
 #include "../src/mysql_api.h"
 #include "../src/rnp_misc.h"
+#include "../src/sptirp.h"
 
 edge_weight_t checker(graph_data_t, graph_data_t);
 
@@ -56,45 +57,36 @@ int main(int argc, char* argv[])
     if (SingleLinkedList_Init(&nodes) == DS_ERROR)
 	    exit(-1);
 	for (i = 0; i < size; i++) {
-	    if ((nd = Node_CreateRandomCDL(i, 10.0, 10)) == NULL)
-		    exit(-1);
-	    if (SingleLinkedList_InsertTail(nodes, nd) == DS_ERROR)
-		    exit(-1);
+	    if (i < 1) {
+		    if ((nd = Node_CreateRandomGW(i, 10.0, 10)) == NULL)
+			    exit(-1);
+	        if (SingleLinkedList_InsertTail(nodes, nd) == DS_ERROR)
+		        exit(-1);
+		} else if (i < 100) {
+		    if ((nd = Node_CreateRandomSN(i, 10.0, 10)) == NULL)
+			    exit(-1);
+	        if (SingleLinkedList_InsertTail(nodes, nd) == DS_ERROR)
+		        exit(-1);
+		} else {
+		    if ((nd = Node_CreateRandomCDL(i, 10.0, 10)) == NULL)
+			    exit(-1);
+	        if (SingleLinkedList_InsertTail(nodes, nd) == DS_ERROR)
+		        exit(-1);
+		}
 	}
-	if ((pg = ALGraph_Create()) == NULL)
-	    exit(-1);
-    if (ALGraph_Init(pg, nodes, checker) == DS_ERROR)
-	    exit(-1);
 
-	if (check_feasibility(pg, src, dsts, n) == DS_TRUE)
-	    printf("feasible\n");
+	if ((pg = SPTiRP(nodes)) == NULL)
+	    printf("algorithm fails\n");
 	else
-	    printf("infeasible\n");
+	    printf("algorithm done\n");
 
-	if ((spt = ALGraph_ShortestPathTree(pg, src, dsts, n)) == NULL)
-	    printf("fail to build shortest path tree\n");
-
-/* copy
-    printf("copy test:\n");
-	if ((cpy = ALGraph_Copy(pg)) == NULL)
-	    printf("copy fail\n");
-	else
-	    ALGraph_Print(pg, stdout);
-*/
-    
 	if ((pm = Mysql_CreateInitConnect(user, passwd, db)) == NULL)
 	    exit(-1);
 	Mysql_Query(pm, "DELETE FROM graph;");
-	Mysql_Query(pm, "DELETE FROM graph1;");
     if (Mysql_WriteGraph(pg, pm, "graph") == DS_ERROR)
 	    printf("pg mysql fails\n");
 	else
 	    printf("pg mysql done\n");
-
-    if (Mysql_WriteGraph(spt, pm, "graph1") == DS_ERROR)
-	    printf("spt mysql fails\n");
-	else
-	    printf("spt mysql done\n");
 
 	return 0;
 }

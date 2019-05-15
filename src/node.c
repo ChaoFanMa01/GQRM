@@ -203,6 +203,24 @@ Node_GetHop(pt_Node nd, gqrm_hop_t* re)
 }
 
 ds_stat
+Node_SetSelected(pt_Node nd)
+{
+    if (!nd)
+	    return DS_ERROR;
+	nd->status = SLCT;
+	return DS_OK;
+}
+
+ds_stat
+Node_SetUnselected(pt_Node nd)
+{
+    if (!nd)
+	    return DS_ERROR;
+	nd->status = UNSLCT;
+	return DS_OK;
+}
+
+ds_stat
 Node_SetHop(pt_Node nd, gqrm_hop_t h)
 {
     if (!nd)

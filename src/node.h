@@ -51,6 +51,8 @@ extern ds_stat      Node_GetPower(pt_Node, gqrm_power_t*);
 extern ds_stat      Node_GetHop(pt_Node, gqrm_hop_t*);
 extern ds_stat      Node_GetStatus(pt_Node, cdl_status*);
 extern ds_stat      Node_SetStatus(pt_Node, cdl_status);
+extern ds_stat      Node_SetSelected(pt_Node);
+extern ds_stat      Node_SetUnselected(pt_Node);
 extern ds_stat      Node_SetHop(pt_Node, gqrm_hop_t);
 extern ds_stat      Node_SetPower(pt_Node, gqrm_power_t);
 extern ds_bool      Node_IsSN(pt_Node);

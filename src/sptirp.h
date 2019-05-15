@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "header.h"
 #include "node.h"
@@ -31,4 +32,5 @@
 #include "shortest_path_tree.h"
 #include "rnp_misc.h"
 
+pt_ALGraph SPTiRP(p_sll);
 #endif
