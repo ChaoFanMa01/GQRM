@@ -35,7 +35,7 @@ static const double ple = 4;
 static const double dr = 250;
 
 /* noise bandwidth (in kHz) */
-static const double nb = 50;
+static const double nb = 150;
 
 /* standard deviation due to multipath effects */
 static const double std = 5;
