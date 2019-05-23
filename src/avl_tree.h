@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "header.h"
 
@@ -43,4 +44,5 @@ extern ds_stat       AVLTree_GetMin(pt_AVLTree, avlt_data_t*);
 extern ds_stat       AVLTree_Insert(pt_AVLTree, avlt_data_t);
 extern size_t        AVLTree_Size(pt_AVLTree);
 extern ds_stat       AVLTree_Delete(pt_AVLTree, avlt_data_t);
+extern size_t        AVLTree_Height(pt_AVLTree);
 #endif

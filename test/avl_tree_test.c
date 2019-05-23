@@ -27,13 +27,15 @@ int main(int argc, char* argv[])
 	    array[i] = rand() % 1000;
 	
     printf("random over\n");
-	for (i = 0; i < size; i++) 
+	for (i = 0; i < size; i++) {
+	    printf("Insert %d\n", array[i]);
 	    AVLTree_Insert(avl, &array[i]);
+	}
 	
     printf("insert over, size %ld\n", AVLTree_Size(avl));
 	AVLTree_InOrderMap(avl, print);
     printf("print over\n");
-
+/*
 	printf("delete: ");
 	scanf("%d", &input);
 
@@ -43,7 +45,7 @@ int main(int argc, char* argv[])
 	    printf("remain size: %ld\n", AVLTree_Size(avl));
 	    AVLTree_InOrderMap(avl, print);
 	}
-
+*/
 	return 0;
 }
 

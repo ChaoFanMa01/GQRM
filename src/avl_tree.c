@@ -54,10 +54,18 @@ static ds_stat in_map_subtree(p_avlt_node, avlt_map_func, size_t);
 static ds_stat post_map_subtree(p_avlt_node, avlt_map_func, size_t);
 static ds_stat get_max(p_avlt_node, avlt_data_t*);
 static ds_stat get_min(p_avlt_node, avlt_data_t*);
-static ds_stat insert(p_avlt_node, avlt_data_t, avl_cmp);
+static ds_stat insert(pt_AVLTree, p_avlt_node, avlt_data_t);
 static ds_stat find_node(p_avlt_node, avlt_data_t, avl_cmp, p_avlt_node*);
 static ds_stat find_min_node(p_avlt_node, p_avlt_node*);
 static ds_stat delete(p_avlt_node*, avlt_data_t, avl_cmp);
+static ds_stat right_rotate(p_avlt_node*);
+static ds_stat left_rotate(p_avlt_node*);
+static ds_stat right_left_rotate(p_avlt_node*);
+static ds_stat left_right_rotate(p_avlt_node*);
+static size_t height(p_avlt_node);
+static ds_stat update_height(p_avlt_node);
+static ds_stat balance(p_avlt_node*);
+static ds_stat balance_to_root(pt_AVLTree, p_avlt_node);
 
 static p_avlt_node
 create_node(avlt_data_t data)
@@ -73,7 +81,7 @@ create_node(avlt_data_t data)
 	nd->left    = NULL;
 	nd->right   = NULL;
 	nd->parent  = NULL;
-	nd->height  = 0;
+	nd->height  = 1;
 
 	return nd;
 }
@@ -330,6 +338,39 @@ delete(p_avlt_node* sub, avlt_data_t data, avl_cmp cmp)
 	return DS_OK;
 }
 
+size_t
+AVLTree_Height(pt_AVLTree bst)
+{
+    if (!bst)
+	    return 0;
+	return height(bst->root);
+}
+
+static size_t
+height(p_avlt_node sub)
+{
+    if (!sub)
+	    return 0;
+	return sub->height;
+}
+
+static ds_stat
+update_height(p_avlt_node sub)
+{
+    size_t lh, rh;
+
+    if (!sub)
+	    return DS_ERROR;
+	
+    while (sub) {
+	    lh = height(sub->left);
+    	rh = height(sub->right);
+    	sub->height = lh > rh ? lh + 1 : rh + 1;
+		sub = sub->parent;
+	}
+	return DS_OK;
+}
+
 ds_stat
 AVLTree_Insert(pt_AVLTree avl, avlt_data_t data)
 {
@@ -341,7 +382,7 @@ AVLTree_Insert(pt_AVLTree avl, avlt_data_t data)
 		return DS_OK;
 	}
 
-	if (insert(avl->root, data, avl->cmp) == DS_OK) {
+	if (insert(avl, avl->root, data) == DS_OK) {
 	    avl->size++;
 		return DS_OK;
 	}
@@ -349,15 +390,15 @@ AVLTree_Insert(pt_AVLTree avl, avlt_data_t data)
 }
 
 static ds_stat
-insert(p_avlt_node sub, avlt_data_t data, avl_cmp cmp)
+insert(pt_AVLTree avl, p_avlt_node sub, avlt_data_t data)
 {
     p_avlt_node   nd;
 
-    if (!sub || !data)
+    if (!avl || !sub || !data)
 	    return DS_ERROR;
 	
 	while (sub) {
-	    if (cmp(data, sub->data) > 0) {
+	    if (avl->cmp(data, sub->data) > 0) {
 		    if (sub->right) {
 			    sub = sub->right;
 			} else {
@@ -365,9 +406,11 @@ insert(p_avlt_node sub, avlt_data_t data, avl_cmp cmp)
 				    return DS_ERROR;
 			    sub->right = nd;
 				nd->parent = sub;
+				update_height(sub);
+				balance_to_root(avl, sub);
 				return DS_OK;
 			}
-		} else if (cmp(data, sub->data) < 0) {
+		} else if (avl->cmp(data, sub->data) < 0) {
 		    if (sub->left) {
 			    sub = sub->left;
 			} else {
@@ -375,6 +418,8 @@ insert(p_avlt_node sub, avlt_data_t data, avl_cmp cmp)
 				    return DS_ERROR;
 			    sub->left = nd;
 				nd->parent = sub;
+				update_height(sub);
+				balance_to_root(avl, sub);
 				return DS_OK;
 			}
 		} else {
@@ -382,4 +427,185 @@ insert(p_avlt_node sub, avlt_data_t data, avl_cmp cmp)
 		}
 	}
 	return DS_ERROR;
+}
+
+static ds_stat
+balance_to_root(pt_AVLTree avl, p_avlt_node sub)
+{
+    p_avlt_node*   nd;
+
+    if (!avl || !sub)
+	    return DS_ERROR;
+	
+	while (sub) {
+	    if (!sub->parent)
+		    nd = &avl->root;
+		else if (sub == sub->parent->left)
+		    nd = &sub->parent->left;
+		else
+		    nd = &sub->parent->right;
+		balance(nd);
+
+		sub = sub->parent;
+	}
+	return DS_OK;
+}
+
+static ds_stat
+balance(p_avlt_node* sub)
+{
+    int balance_factor, flag = 0;
+
+	if (!sub)
+	    return DS_ERROR;
+	
+	balance_factor = (int)height((*sub)->left) - 
+	                 (int)height((*sub)->right);
+	if (balance_factor > 1) {
+	    flag = 1;
+	    /*
+		 *     P
+		 *     |
+		 *     A
+		 *    /
+		 *   B
+		 *    \
+		 *     C
+		 */
+	    if (height((*sub)->left->right) > height((*sub)->left->left))
+		    left_rotate(&(*sub)->left);
+		right_rotate(sub);
+	} else if (balance_factor < -1) {
+	    flag = 1;
+	    /*
+		 *    P
+		 *    |
+		 *    A
+		 *     \
+		 *      B
+		 *     /
+		 *    C
+		 */
+	    if (height((*sub)->right->left) > height((*sub)->right->right))
+		    right_rotate(&(*sub)->right);
+		left_rotate(sub);
+	}
+
+	if (flag) {
+	    update_height((*sub)->left);
+	    update_height((*sub)->right);
+	}
+	return DS_OK;
+}
+
+/**
+ * right rotation:
+ *        P                p
+ *        |                |
+ *        A                B
+ *       / \              / \
+ *      B   ^            C   A
+ *     / \      --->    / \ / \
+ *    C   ^            ^  ^ ^  ^
+ *   / \
+ *  ^   ^
+ */
+static ds_stat
+right_rotate(p_avlt_node* sub)
+{
+    p_avlt_node   left;
+
+    if (!sub)
+	    return DS_ERROR;
+	assert((*sub)->left);
+
+	left                = (*sub)->left;
+	left->parent        = (*sub)->parent;
+	(*sub)->parent      = left;
+	(*sub)->left        = left->right;
+	if (left->right)
+    	left->right->parent = *sub;
+	left->right         = *sub;
+	*sub                = left;
+
+	return DS_OK;
+}
+
+/**
+ * left rotation:
+ *     P                  P
+ *     |                  |
+ *     A                  B
+ *    / \                / \
+ *   ^   B     ---->    A   C
+ *      / \            / \ / \
+ *     ^   C          ^  ^ ^  ^
+ *        / \
+ *       ^   ^
+ */
+static ds_stat
+left_rotate(p_avlt_node* sub)
+{
+    p_avlt_node   right;
+	
+	if (!sub)
+	    return DS_ERROR;
+	assert((*sub)->right);
+
+	right                 = (*sub)->right;
+	right->parent         = (*sub)->parent;
+	(*sub)->parent        = right;
+	(*sub)->right         = right->left;
+	if (right->left)
+    	right->left->parent   = *sub;
+	right->left           = *sub;
+	*sub                  = right;
+
+	return DS_OK;
+}
+
+/**
+ * left-right rotation:
+ *         P                       P                     P
+ *         |                       |                     |
+ *         A                       A                     C
+ *        / \   left rotate       / \  right rotate     / \
+ *       B   ^  from B           C   ^ from A          B   A
+ *      / \     ----------->    / \    ------------>  / \ / \
+ *     ^   C                   B   ^                 ^  ^ ^  ^
+ *        / \                 / \
+ *       ^   ^               ^   ^
+ */
+static ds_stat
+left_right_rotate(p_avlt_node* sub)
+{
+   if (!sub)
+       return DS_ERROR;
+   assert((*sub)->left);
+   if (left_rotate(&(*sub)->left) == DS_ERROR)
+       return DS_ERROR;
+   return right_rotate(sub);
+}
+
+/**
+ * right-left rotation:
+ *        P                     P                        P
+ *        |                     |                        |
+ *        A                     A                        B
+ *       / \     right rotate  / \     left rotate      / \
+ *      ^   B    from B       ^   B    from A          A   C
+ *         / \   ------------>   / \   ----------->   / \ / \
+ *        C   ^                 ^   C                ^  ^ ^  ^ 
+ *       / \                       / \
+ *      ^   ^                     ^   ^
+ */
+static ds_stat
+right_left_rotate(p_avlt_node* sub)
+{
+    if (!sub)
+	    return DS_ERROR;
+	assert((*sub)->right);
+    if (right_rotate(&(*sub)->right) == DS_ERROR)
+	    return DS_ERROR;
+	return left_rotate(sub);
 }
