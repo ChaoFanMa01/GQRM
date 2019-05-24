@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     printf("insert over, size %ld\n", AVLTree_Size(avl));
 	AVLTree_InOrderMap(avl, print);
     printf("print over\n");
-/*
+
 	printf("delete: ");
 	scanf("%d", &input);
 
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	    printf("remain size: %ld\n", AVLTree_Size(avl));
 	    AVLTree_InOrderMap(avl, print);
 	}
-*/
+
 	return 0;
 }
 

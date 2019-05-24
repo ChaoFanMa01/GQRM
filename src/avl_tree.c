@@ -57,7 +57,7 @@ static ds_stat get_min(p_avlt_node, avlt_data_t*);
 static ds_stat insert(pt_AVLTree, p_avlt_node, avlt_data_t);
 static ds_stat find_node(p_avlt_node, avlt_data_t, avl_cmp, p_avlt_node*);
 static ds_stat find_min_node(p_avlt_node, p_avlt_node*);
-static ds_stat delete(p_avlt_node*, avlt_data_t, avl_cmp);
+static ds_stat delete(pt_AVLTree, p_avlt_node*, avlt_data_t);
 static ds_stat right_rotate(p_avlt_node*);
 static ds_stat left_rotate(p_avlt_node*);
 static ds_stat right_left_rotate(p_avlt_node*);
@@ -245,24 +245,24 @@ find_min_node(p_avlt_node sub, p_avlt_node* re)
 }
 
 ds_stat
-AVLTree_Delete(pt_AVLTree bst, avlt_data_t data)
+AVLTree_Delete(pt_AVLTree avl, avlt_data_t data)
 {
-    if (!bst)
+    if (!avl)
 	    return DS_ERROR;
-	if (delete(&bst->root, data, bst->cmp) == DS_OK) {
-	    bst->size--;
+	if (delete(avl, &avl->root, data) == DS_OK) {
+	    avl->size--;
 		return DS_OK;
 	}
 	return DS_ERROR;
 }
 
 static ds_stat
-delete(p_avlt_node* sub, avlt_data_t data, avl_cmp cmp)
+delete(pt_AVLTree avl, p_avlt_node* sub, avlt_data_t data)
 {
-    p_avlt_node   del = NULL, min = NULL;
+    p_avlt_node   del = NULL, min = NULL, min_pa;
 	p_avlt_node*  point_to_delete;
 
-	if (find_node(*sub, data, cmp, &del) == DS_ERROR)
+	if (find_node(*sub, data, avl->cmp, &del) == DS_ERROR)
 	    return DS_ERROR;
 	
 	/* find the address of the pointer which points to
@@ -293,6 +293,8 @@ delete(p_avlt_node* sub, avlt_data_t data, avl_cmp cmp)
 		*point_to_delete = del->right;
 		if (del->right)
 		    del->right->parent = del->parent;
+		update_height(del->parent);
+		balance_to_root(avl, del->parent);
 	/** the second case
 	 *     O
 	 *    / \
@@ -302,6 +304,8 @@ delete(p_avlt_node* sub, avlt_data_t data, avl_cmp cmp)
 		*point_to_delete = del->left;
 		if (del->left)
 		    del->left->parent = del->parent;
+		update_height(del->parent);
+		balance_to_root(avl, del->parent);
 	/** the third case
 	 *     O
 	 *    / \
@@ -311,8 +315,12 @@ delete(p_avlt_node* sub, avlt_data_t data, avl_cmp cmp)
 	 */
 	} else if (del->right->left == NULL) {
 	    del->right->left = del->left;
+		if (del->left)
+    		del->left->parent = del->right;
 		*point_to_delete = del->right;
 		del->right->parent = del->parent;
+		update_height(del->parent);
+		balance_to_root(avl, del->parent);
 	/** the forth case
 	 *           O
 	 *          / \
@@ -328,10 +336,19 @@ delete(p_avlt_node* sub, avlt_data_t data, avl_cmp cmp)
 	    find_min_node(del->right, &min);
 		assert(min);
 		min->parent->left = min->right;
+		if (min->right)
+		    min->right->parent = min->parent;
+		min_pa = min->parent;
 		min->left = del->left;
+		if (del->left)
+		    del->left->parent = min;
 		min->right = del->right;
+		if (del->right)
+		    del->right->parent = min;
 		*point_to_delete = min;
 		min->parent = del->parent;
+		update_height(min_pa);
+		balance_to_root(avl, min_pa);
 	}
 
 	free(del);
@@ -366,6 +383,7 @@ update_height(p_avlt_node sub)
 	    lh = height(sub->left);
     	rh = height(sub->right);
     	sub->height = lh > rh ? lh + 1 : rh + 1;
+		printf("height: %ld\n", sub->height);
 		sub = sub->parent;
 	}
 	return DS_OK;
@@ -436,7 +454,7 @@ balance_to_root(pt_AVLTree avl, p_avlt_node sub)
 
     if (!avl || !sub)
 	    return DS_ERROR;
-	
+	printf("balance to root\n");
 	while (sub) {
 	    if (!sub->parent)
 		    nd = &avl->root;
@@ -461,6 +479,7 @@ balance(p_avlt_node* sub)
 	
 	balance_factor = (int)height((*sub)->left) - 
 	                 (int)height((*sub)->right);
+    printf("balance factor: %d\n", balance_factor);
 	if (balance_factor > 1) {
 	    flag = 1;
 	    /*
