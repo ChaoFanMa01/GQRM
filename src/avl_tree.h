@@ -34,6 +34,7 @@ typedef void *             avlt_data_t;
 
 typedef int  (*avl_cmp)(avlt_data_t, avlt_data_t);
 typedef void (*avlt_map_func)(avlt_data_t, size_t);
+typedef void (*avlt_inter_func)(pt_AVLTree, avlt_data_t);
 
 extern pt_AVLTree    AVLTree_Create(avl_cmp);
 extern ds_stat       AVLTree_PreOrderMap(pt_AVLTree, avlt_map_func);
@@ -45,4 +46,9 @@ extern ds_stat       AVLTree_Insert(pt_AVLTree, avlt_data_t);
 extern size_t        AVLTree_Size(pt_AVLTree);
 extern ds_stat       AVLTree_Delete(pt_AVLTree, avlt_data_t);
 extern size_t        AVLTree_Height(pt_AVLTree);
+extern ds_bool       AVLTree_Contain(pt_AVLTree avl, avlt_data_t data);
+extern void          AVLTree_Free(pt_AVLTree*);
+extern void          AVLTree_Clear(pt_AVLTree);
+extern pt_AVLTree    AVLTree_Copy(pt_AVLTree);
+extern ds_stat       AVLTree_InterOpt(pt_AVLTree, pt_AVLTree, avlt_inter_func);
 #endif

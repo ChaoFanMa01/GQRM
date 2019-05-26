@@ -66,6 +66,10 @@ static size_t height(p_avlt_node);
 static ds_stat update_height(p_avlt_node);
 static ds_stat balance(p_avlt_node*);
 static ds_stat balance_to_root(pt_AVLTree, p_avlt_node);
+static void free_subtree(p_avlt_node*);
+static p_avlt_node copy_node(p_avlt_node);
+static p_avlt_node copy_subtree(p_avlt_node);
+static ds_stat in_inter_opt(pt_AVLTree, p_avlt_node, avlt_inter_func);
 
 static p_avlt_node
 create_node(avlt_data_t data)
@@ -126,6 +130,34 @@ AVLTree_PostOrderMap(pt_AVLTree avl, avlt_map_func func)
     if (!avl)
 	    return DS_ERROR;
 	return post_map_subtree(avl->root, func, 0);
+}
+
+/** @fn
+ * For each data in "from", do action denoted by "func"
+ * to AVL tree "to".
+ */
+ds_stat
+AVLTree_InterOpt(pt_AVLTree to, pt_AVLTree from, avlt_inter_func func)
+{
+    if (!to || !from)
+	    return DS_ERROR;
+	return in_inter_opt(to, from->root, func);
+}
+
+/** @fn 
+ * Perform some action denoted by "func" for each data in 
+ * subtree "sub" to an AVL tree "avl", i.e., for each data
+ * in "sub", do operation "func" in AVL tree "avl".
+ */
+static ds_stat
+in_inter_opt(pt_AVLTree avl, p_avlt_node sub, avlt_inter_func func)
+{
+    if (!avl || !sub || !func)
+	    return DS_ERROR;
+	
+	in_inter_opt(avl, sub, func);
+	func(avl, sub->data);
+	in_inter_opt(avl, sub, func);
 }
 
 static ds_stat
@@ -383,7 +415,6 @@ update_height(p_avlt_node sub)
 	    lh = height(sub->left);
     	rh = height(sub->right);
     	sub->height = lh > rh ? lh + 1 : rh + 1;
-		printf("height: %ld\n", sub->height);
 		sub = sub->parent;
 	}
 	return DS_OK;
@@ -454,7 +485,6 @@ balance_to_root(pt_AVLTree avl, p_avlt_node sub)
 
     if (!avl || !sub)
 	    return DS_ERROR;
-	printf("balance to root\n");
 	while (sub) {
 	    if (!sub->parent)
 		    nd = &avl->root;
@@ -479,7 +509,6 @@ balance(p_avlt_node* sub)
 	
 	balance_factor = (int)height((*sub)->left) - 
 	                 (int)height((*sub)->right);
-    printf("balance factor: %d\n", balance_factor);
 	if (balance_factor > 1) {
 	    flag = 1;
 	    /*
@@ -627,4 +656,112 @@ right_left_rotate(p_avlt_node* sub)
     if (right_rotate(&(*sub)->right) == DS_ERROR)
 	    return DS_ERROR;
 	return left_rotate(sub);
+}
+
+/** @fn
+ * Check whether the given data is contained in this AVL tree.
+ */
+ds_bool
+AVLTree_Contain(pt_AVLTree avl, avlt_data_t data)
+{
+    p_avlt_node nd;
+
+    if (!avl || !data)
+	    return DS_FALSE;
+
+    if (find_node(avl->root, data, avl->cmp, &nd) == DS_ERROR)
+	    return DS_FALSE;
+	return DS_TRUE;
+}
+
+void
+AVLTree_Clear(pt_AVLTree avl)
+{
+    if (!avl)
+	    return;
+	free_subtree(&avl->root);
+	avl->root = NULL;
+	avl->size = 0;
+}
+
+void
+AVLTree_Free(pt_AVLTree* avl)
+{
+    if (!avl || !(*avl))
+	    return;
+
+    free_subtree(&(*avl)->root);
+	free((*avl)->root);
+	*avl = NULL;
+}
+
+static void
+free_subtree(p_avlt_node* sub)
+{
+    if (!sub || !(*sub))
+	    return;
+	free_subtree(&(*sub)->left);
+	free_subtree(&(*sub)->right);
+	free(*sub);
+	*sub = NULL;
+}
+
+pt_AVLTree
+AVLTree_Copy(pt_AVLTree avl)
+{
+    pt_AVLTree cpy;
+
+	if (!avl)
+	    return NULL;
+	
+	if ((cpy = malloc(sizeof(AVLTree))) == NULL)
+	    return NULL;
+	
+	cpy->root = copy_subtree(avl->root);
+	cpy->cmp  = avl->cmp;
+	cpy->size = avl->size;
+
+	return cpy;
+}
+
+static p_avlt_node
+copy_subtree(p_avlt_node from)
+{
+    p_avlt_node  cpy;
+
+    if (!from)
+	    return NULL;
+
+    /* copy the root of this subtree */
+	if ((cpy = copy_node(from)) == NULL)
+	    return NULL;
+	/* copy the left subtree of root */
+	cpy->left = copy_subtree(from->left);
+	if (cpy->left)
+	    cpy->left->parent = cpy;
+	/* copy the right subtree of root */
+	cpy->right = copy_subtree(from->right);
+	if (cpy->right)
+	    cpy->right->parent = cpy;
+	return cpy;
+}
+
+static p_avlt_node
+copy_node(p_avlt_node nd)
+{
+    p_avlt_node cpy;
+
+	if (!nd) 
+	    return NULL;
+	
+	if ((cpy = malloc(sizeof(avlt_node))) == NULL)
+	    return NULL;
+	
+	cpy->data   = nd->data;
+	cpy->height = nd->height;
+	cpy->left   = NULL;
+	cpy->right  = NULL;
+	cpy->parent = NULL;
+
+	return cpy;
 }
