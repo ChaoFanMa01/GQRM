@@ -111,8 +111,10 @@ Set_Union(pt_Set st1, pt_Set st2)
 	
 	if ((res = copy(st1)) == NULL)
 	    return NULL;
-	
+
+    printf("copy over\n");
 	AVLTree_InterOpt(res->avl, st2->avl, add);
+	printf("insert over\n");
 
 	return res;
 }
@@ -133,6 +135,14 @@ Set_InSetUnion(pt_Set lhs, pt_Set rhs)
 	    return DS_ERROR;
 	AVLTree_InterOpt(lhs->avl, rhs->avl, add);
 	return DS_OK;
+}
+
+ds_stat
+Set_Map(pt_Set st, set_map func)
+{
+    if (!st)
+	    return DS_ERROR;
+	return AVLTree_InOrderMap(st->avl, func);
 }
 
 static pt_Set

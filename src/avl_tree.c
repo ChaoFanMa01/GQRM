@@ -154,10 +154,9 @@ in_inter_opt(pt_AVLTree avl, p_avlt_node sub, avlt_inter_func func)
 {
     if (!avl || !sub || !func)
 	    return DS_ERROR;
-	
-	in_inter_opt(avl, sub, func);
+	in_inter_opt(avl, sub->left, func);
 	func(avl, sub->data);
-	in_inter_opt(avl, sub, func);
+	in_inter_opt(avl, sub->right, func);
 }
 
 static ds_stat

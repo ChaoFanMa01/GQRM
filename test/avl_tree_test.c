@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 	avl = AVLTree_Create(cmp);
 
     printf("creat over\n");
-	for (i = 0; i < size; i++)
+	for (i = 0; i < 1000; i++)
 	    array[i] = rand() % 1000;
 	
     printf("random over\n");
@@ -40,16 +40,22 @@ int main(int argc, char* argv[])
 	AVLTree_InOrderMap(cpy, print);
 
 /*
+    for (i = 0; i < 10; i++)
+	    AVLTree_Insert(cpy, &array[rand() % 1000]);
+    printf("\nafter insert\n");
+	AVLTree_InOrderMap(cpy, print);
+*/
+
 	printf("delete: ");
 	scanf("%d", &input);
 
-	if (AVLTree_Delete(avl, &input) == DS_ERROR)
+	if (AVLTree_Delete(cpy, &input) == DS_ERROR)
 	    printf("fail to delete\n");
 	else {
-	    printf("remain size: %ld\n", AVLTree_Size(avl));
-	    AVLTree_InOrderMap(avl, print);
+	    printf("remain size: %ld\n", AVLTree_Size(cpy));
+	    AVLTree_InOrderMap(cpy, print);
 	}
-*/
+
 	return 0;
 }
 

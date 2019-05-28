@@ -30,6 +30,7 @@
 #include "../src/mysql_api.h"
 #include "../src/rnp_misc.h"
 #include "../src/sptirp.h"
+#include "../src/simulation.h"
 
 edge_weight_t checker(graph_data_t, graph_data_t);
 
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
 	char          db[] = "cpp";
 	pt_Mysql      pm;
 	gqrm_id_t     src = 0;
-	gqrm_id_t     dsts[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+	gqrm_id_t     dsts[100];
 	size_t        n = 10;
 
 	srand((unsigned)time(0));
@@ -62,7 +63,7 @@ int main(int argc, char* argv[])
 			    exit(-1);
 	        if (SingleLinkedList_InsertTail(nodes, nd) == DS_ERROR)
 		        exit(-1);
-		} else if (i < 100) {
+		} else if (i < n) {
 		    if ((nd = Node_CreateRandomSN(i, 10.0, 10)) == NULL)
 			    exit(-1);
 	        if (SingleLinkedList_InsertTail(nodes, nd) == DS_ERROR)
@@ -79,6 +80,17 @@ int main(int argc, char* argv[])
 	    printf("algorithm fails\n");
 	else
 	    printf("algorithm done\n");
+	
+	for (i = 1; i < n; i++)
+	    dsts[i - 1] = (gqrm_id_t)i;
+
+    cpy = ALGraph_Create();
+	ALGraph_Init(cpy, nodes, checker);
+	if ((spt = ALGraph_ShortestPathTree(cpy, 0, dsts, n - 1)) == NULL) {
+	    printf("spt fails\n"); exit(-1);
+	}
+	printf("spt ok.\n");
+	printf("average delay: %lf\n", simulate(cpy, 0, dsts, n - 1));
 
 	if ((pm = Mysql_CreateInitConnect(user, passwd, db)) == NULL)
 	    exit(-1);

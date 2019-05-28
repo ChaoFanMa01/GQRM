@@ -114,6 +114,7 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 	p_sll            white = NULL;
 	p_sll            black = NULL;
 
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 
     /*
 	 * gray  = \varnothing;
@@ -122,17 +123,21 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 	 */
 	if (input_feasibility(pg, src, dsts, n) == DS_FALSE)
 	    return NULL;
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 	if (SingleLinkedList_Init(&gray) == DS_ERROR)
 	    return NULL;
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 	if (SingleLinkedList_Init(&white) == DS_ERROR) {
 	    SingleLinkedList_Destroy(&gray, NULL);
 	    return NULL;
 	}
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 	if (SingleLinkedList_Init(&black) == DS_ERROR) {
 	    SingleLinkedList_Destroy(&gray, NULL);
 	    SingleLinkedList_Destroy(&white, NULL);
 	    return NULL;
 	}
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 
     /* create a graph without any edge */
 	spt = ALGraph_Create();
@@ -145,6 +150,7 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 		if (ALGraph_PushVertex(spt, pv_new) == DS_ERROR)
 		    return error_clear(&spt, &gray, &white, &black);
 	}
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 
     /*
 	 * copy src; src->weight = 0;
@@ -166,6 +172,7 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 			if (SingleLinkedList_InsertHead(white, pv_tmp) == DS_ERROR)
 			    return error_clear(&spt, &gray, &white, &black);
 	}
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 
     /* loop until gray is empty */
 	while (SingleLinkedList_Empty(gray) != DS_TRUE) {
@@ -244,7 +251,7 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 			}
 		}
 
-//        printf("func: %s, line: %d\n", __func__, __LINE__);
+        printf("func: %s, line: %d\n", __func__, __LINE__);
         /*
 		 * B = all neighbors of min in white;
 		 * delete B from white;
@@ -275,6 +282,7 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 			}
 		}
 	}
+        printf("func: %s, line: %d\n", __func__, __LINE__);
     size = ALGraph_Size(spt);
 	while (has_non_dst_leaves(spt, dsts, n) == DS_TRUE) {
 	    for (i = 0; i < size; i++) {
@@ -298,11 +306,12 @@ ALGraph_ShortestPathTree(pt_ALGraph pg, gqrm_id_t src,
 			}
 		}
 	}
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 
 	SingleLinkedList_Destroy(&gray, NULL);
 	SingleLinkedList_Destroy(&white, NULL);
 	SingleLinkedList_Destroy(&black, NULL);
-//    printf("func: %s, line: %d\n", __func__, __LINE__);
+   printf("func: %s, line: %d\n", __func__, __LINE__);
 
 	return spt;
 }
@@ -386,12 +395,18 @@ input_feasibility(pt_ALGraph pg, gqrm_id_t src,
 {
     size_t    i;
 
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 	if (!pg || ALGraph_Size(pg) <= 0)
 	    return DS_FALSE;
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 	if (ALGraph_ContainVertexID(pg, src) == DS_FALSE)
 	    return DS_FALSE;
-	for (i = 0; i < n; i++)
+    printf("func: %s, line: %d\n", __func__, __LINE__);
+	for (i = 0; i < n; i++) {
+	    printf("dsts: %ld\n", dsts[i]);
 	    if (ALGraph_ContainVertexID(pg, dsts[i]) == DS_FALSE)
 		    return DS_FALSE;
+	}
+    printf("func: %s, line: %d\n", __func__, __LINE__);
 	return DS_TRUE;
 }
